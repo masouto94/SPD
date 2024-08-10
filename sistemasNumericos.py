@@ -1,5 +1,3 @@
-from math import log,pow
-
 def toBinary(num: int):
     return bin(num).replace("0b","")
 
