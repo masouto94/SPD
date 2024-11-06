@@ -24,6 +24,11 @@
 
 extrn regToASCII:proc
 extrn asciiToReg:proc
+extrn cajaCarga:proc
+extrn contadorEspacios:proc
+extrn contadorNumeros:proc
+extrn contadorCaracteres:proc
+extrn contadorParrafo:proc
 main proc
     mov ax, @data
     mov ds,ax
@@ -104,111 +109,11 @@ finish:
     mov ax,4c00h
     int 21h
 main endp
-cajaCarga proc
 
-    push bp
-    mov bp, sp
-    push ax
-    push bx
 
-    cargar:
-        mov ah,1
-        int 21h
-        mov ah,0
-        cmp ax, ss:[bp+4]
-        je returncajaCarga
-        mov [bx], al
-        inc bx
-    jmp cargar
 
-    returncajaCarga:
-    pop bx
-    pop ax
-    pop bp
-    ret 4
-cajaCarga endp
-contadorEspacios proc
-    push bx
-    mov ax,0
 
-    looper_contadorEspacios:
-        cmp byte ptr [bx], "$"
-        je return_contadorEspacios
-        cmp byte ptr [bx], 20h
-        je incremento_contadorEspacios
-        inc bx
-        jmp looper_contadorEspacios
-    
-    incremento_contadorEspacios:
-        inc ax
-        inc bx
-        jmp looper_contadorEspacios
-    
-    return_contadorEspacios:
-        pop bx
-        ret
-contadorEspacios endp
 
-contadorParrafo proc
-    push bx
-    mov ax,1    ;inicializa el contador de párrafos en 1 porque el párrafo 0 es el primero
-
-    looper_contadorParrafo:
-        cmp byte ptr [bx], "$"
-        je return_contadorParrafo
-        cmp byte ptr [bx], 0dh
-        je incremento_contadorParrafo
-        inc bx
-        jmp looper_contadorParrafo
-    
-    incremento_contadorParrafo:
-        inc ax
-        inc bx
-        jmp looper_contadorParrafo
-    
-    return_contadorParrafo:
-        pop bx
-        ret
-contadorParrafo endp
-
-contadorCaracteres proc
-    push bx
-    mov ax,0
-
-    looper_contadorCaracteres:
-        cmp byte ptr [bx], "$"
-        je return_contadorCaracteres
-        inc ax
-        inc bx
-        jmp looper_contadorCaracteres
-    return_contadorCaracteres:
-        pop bx
-        ret
-contadorCaracteres endp
-
-contadorNumeros proc
-    push bx
-    mov ax,0
-
-    looper_contadorNumeros:
-        cmp byte ptr [bx], "$"
-        je return_contadorNumeros
-        cmp byte ptr [bx], "0"
-        jb nan_contadorNumeros
-        cmp byte ptr [bx], "9"
-        ja nan_contadorNumeros
-        inc bx
-        inc ax
-        jmp looper_contadorNumeros
-    
-    nan_contadorNumeros:
-        inc bx
-        jmp looper_contadorNumeros
-    
-    return_contadorNumeros:
-        pop bx
-        ret
-contadorNumeros endp
 
 mostrarMenu proc
     push ax
