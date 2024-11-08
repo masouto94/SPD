@@ -1,11 +1,14 @@
 .8086
 .model small
 .stack 100h
-
+.386
 .data
     prompt  db  "Ingrese el texto",0dh,0ah,24h
     texto   db  255 dup("$"), 0dh, 0ah, 24h
-    help    db "1 para contar espacios",0dh,0ah,"2 para contar parrafos",0dh,0ah,"3 para contar caracteres",0dh,0ah,"4 para contar numeros",0dh,0ah,"0 para finalizar",0dh,0ah,24h
+    finPrograma db  "Fin del programa",0dh,0ah,24h
+    help    db "1 para contar espacios",0dh,0ah,"2 para contar parrafos",0dh,0ah,"3 para contar caracteres",0dh,0ah,"4 para contar numeros",0dh,0ah,"5 para contar todo",0dh,0ah,"0 para finalizar",0dh,0ah,24h
+    opcion  db  0
+    opcionInvalida  db "La opcion no es valida. Ingrese un valor de los siguientes:",0dh,0ah,24h
     promptSeparador db "Ingrese el separador",0dh,0ah,24h
     separador   dw "-"
     
@@ -35,33 +38,51 @@ main proc
     mov ah, 9
     lea dx, promptSeparador
     int 21h
+    lea dx, salto
+    int 21h
    
     mov ah,1 
     int 21h
     mov ah,0
     mov [separador], ax
     xor ax,ax
-inicio:
-    call mostrarMenu
+
+cargarTexto:
+    mov ah,9
+    lea dx, salto
+    int 21h
+    lea dx, prompt
+    int 21h
+    
     lea bx, texto
     push separador
     call cajaCarga
-    cmp dl,0
+
+inicio:
+    xor dx,dx
+    lea bx, texto
+    call mostrarMenu
+    mov [opcion], dl
+    cmp opcion,0
+
     je finish
-    cmp dl,1
+    
+    cmp opcion,1
     je contarEspacios
     
-    jmp inicio
-    mov ah,9
-    lea dx, prompt
-    lea bx, texto
-    int 21h
+    cmp opcion,2
+    je contarParrafo
+
+    cmp opcion,3
+    je contarCaracteres
+
+    cmp opcion,4
+    je contarNumeros
+
     
 contarEspacios:
     call contadorEspacios
     mov cantEspacioReg,al
-    mov ah,0
-    xor bx,bx
     lea bx, cantEspacio
     call regToAscii
     mov ah, 9
@@ -69,64 +90,92 @@ contarEspacios:
     int 21h
     mov dx, offset cantEspacio
     int 21h
-    jmp inicio
+    cmp opcion,5
+    jne inicio
+
 lea bx, texto
 contarParrafo:
-    xor ax, ax
     call contadorParrafo
     mov cantParrafoReg,al
     lea bx, cantParrafo
     call regToAscii
+    mov ah, 9
+    mov dx, offset salto
+    int 21h
+    mov dx, offset cantParrafo
+    int 21h
+    cmp opcion,5
+    jne inicio
 
 lea bx, texto
 contarCaracteres:
-    xor ax, ax
     call contadorCaracteres
     mov cantCaracteresReg,al
     lea bx, cantCaracteres
     call regToAscii
+    mov ah, 9
+    mov dx, offset salto
+    int 21h
+    mov dx, offset cantCaracteres
+    int 21h
+    cmp opcion,5
+    jne inicio
 
 lea bx, texto
 contarNumeros:
-    xor ax, ax
     call contadorNumeros
     mov cantNumerosReg,al
     lea bx, cantNumeros
     call regToAscii
-
-finish:
     mov ah, 9
     mov dx, offset salto
     int 21h
-    mov dx, offset cantEspacio
-    int 21h
-    mov dx, offset cantParrafo
-    int 21h
-    mov dx, offset cantCaracteres
-    int 21h
     mov dx, offset cantNumeros
+    int 21h
+    cmp opcion,5
+    jne inicio
+
+
+jmp inicio
+finish:
+    mov ah,9
+    lea dx, finPrograma
     int 21h
     mov ax,4c00h
     int 21h
+
 main endp
-
-
-
-
-
 
 mostrarMenu proc
     push ax
-    ;esperamos de dx un valor		
-		mov ah, 9
+    ;dx == Se guarda el valor de la opcion    
+
+    mostrarOpciones_mostrarMenu:
+        mov ah, 9
         lea dx, help
- 		int 21h
+        int 21h
         mov ah,1
         int 21h
         mov ah,0
+        cmp al, 30h         ;0 ascii
+        jb opcionInvalida_mostrarMenu
+        cmp al, 35h         ;4 ascii
+        ja opcionInvalida_mostrarMenu
         sub al, 30h
- 		mov dx, ax
- 		pop ax
-    ret
+        jmp return_mostrarMenu
+    
+    opcionInvalida_mostrarMenu:
+        mov ah, 9
+        lea dx, opcionInvalida
+        int 21h
+        jmp mostrarOpciones_mostrarMenu
+
+    return_mostrarMenu:
+        mov ah, 9
+        lea dx, salto
+        int 21h
+        mov dx, ax
+        pop ax
+        ret
 mostrarMenu endp
 end

@@ -3,9 +3,9 @@
 .stack 100h
 
 .data
-	numeroReg db 0
-	multiplicador db 100, 10, 1
-	divisor db 100, 10, 1
+    numeroReg db 0
+    multiplicador db 100, 10, 1
+    divisor db 100, 10, 1
 
 .code
 
@@ -18,21 +18,21 @@ public contadorNumeros
 public contadorCaracteres
 public contadorParrafo
 
-	impresion proc
-		push bx
+    impresion proc
+        push bx
 
-		mov ah, 9
-		lea dx, [bx]
-		int 21h
+        mov ah, 9
+        lea dx, [bx]
+        int 21h
 
-		pop bx
-		ret
-	impresion endp
+        pop bx
+        ret
+    impresion endp
 
 
 cajaCarga proc
-	;bp+4 => Variable con el separador pasada como primer valor del stack
-	;bx => Debe tener la cadena a la cual cargarle los valores. Lo procesa como puntero
+    ;bp+4 => Variable con el separador pasada como primer valor del stack
+    ;bx => Debe tener la cadena a la cual cargarle los valores. Lo procesa como puntero
     push bp
     mov bp, sp
     push ax
@@ -56,68 +56,68 @@ cajaCarga proc
 cajaCarga endp
 
 
-asciiToReg proc					; La función recibe en bx el offset de numeroAscii para devolverlo como registro
-	push ax
-	push si
-	push cx
-	push bx
+asciiToReg proc                 ; La función recibe en bx el offset de numeroAscii para devolverlo como registro
+    push ax
+    push si
+    push cx
+    push bx
 
-	mov ax, 0
-	mov si, 0
-	mov cx, 3
+    mov ax, 0
+    mov si, 0
+    mov cx, 3
 
-	proceso0:
-		mov al, [bx]
-		sub al, 30h
-		mov dl, multiplicador[si]
-		mul dl
-		add numeroReg, al
-		inc bx
-		inc si
-		mov ax, 0
-		loop proceso0
+    proceso0:
+        mov al, [bx]
+        sub al, 30h
+        mov dl, multiplicador[si]
+        mul dl
+        add numeroReg, al
+        inc bx
+        inc si
+        mov ax, 0
+        loop proceso0
 
-	pop bx
-	pop cx
-	pop si
-	pop ax		
-	ret
+    pop bx
+    pop cx
+    pop si
+    pop ax      
+    ret
 asciiToReg endp
 
 
-regToAscii proc					; La función recibe en bx el offset de numeroReg para devolverlo como ASCII
-	push ax
-	push si
-	push cx
-	push bx
+regToAscii proc                 ; La función recibe en bx el offset de numeroReg para devolverlo como ASCII
+    push ax
+    push si
+    push cx
+    push bx
 
-		;mov ah, 0				; Estas dos instrucciones las uso
-		;mov al, numeroReg			; solamente si no tengo el número en ax
-	mov si, 0
-	mov cx, 3
+        ;mov ah, 0              ; Estas dos instrucciones las uso
+        ;mov al, numeroReg          ; solamente si no tengo el número en ax
+    mov si, 0
+    mov cx, 3
 
-	proceso2:
-		mov dl, divisor[si]
-		div dl
-		add al, 30h
-		mov [bx], al
-		mov al, ah
-		mov ah, 0
-		inc bx
-		inc si
-		loop proceso2
+    proceso2:
+        mov dl, divisor[si]
+        div dl
+        add al, 30h
+        mov [bx], al
+        mov al, ah
+        mov ah, 0
+        inc bx
+        inc si
+        loop proceso2
 
-	pop bx
-	pop cx
-	pop si
-	pop ax		
-	ret
+    pop bx
+    pop cx
+    pop si
+    pop ax      
+    ret
 regToAscii endp
 
 
 contadorEspacios proc
-	;ax == Valor corriente de cantidad de espacios. El registro se modifica directamente
-	;bx => Referencia de la cadena a contar
+    ;ax == Valor corriente de cantidad de espacios. El registro se modifica directamente
+    ;bx => Referencia de la cadena a contar
     push bx
     mov ax,0
 
@@ -140,6 +140,8 @@ contadorEspacios proc
 contadorEspacios endp
 
 contadorNumeros proc
+    ;ax == Valor corriente de cantidad de numeros. El registro se modifica directamente
+    ;bx => Referencia de la cadena a contar
     push bx
     mov ax,0
 
@@ -164,6 +166,8 @@ contadorNumeros proc
 contadorNumeros endp
 
 contadorCaracteres proc
+    ;ax == Valor corriente de cantidad de caracteres. El registro se modifica directamente
+    ;bx => Referencia de la cadena a contar
     push bx
     mov ax,0
 
@@ -179,6 +183,8 @@ contadorCaracteres proc
 contadorCaracteres endp
 
 contadorParrafo proc
+    ;ax == Valor corriente de cantidad de parrafos. El registro se modifica directamente
+    ;bx => Referencia de la cadena a contar
     push bx
     mov ax,1    ;inicializa el contador de párrafos en 1 porque el párrafo 0 es el primero
 
