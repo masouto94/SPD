@@ -117,4 +117,8 @@ proc Clearscreen
 	ret 
 Clearscreen endp
 
+proc GetFileLength
+	ret 
+GetFileLength endp
+
 end
