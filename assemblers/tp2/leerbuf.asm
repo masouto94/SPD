@@ -3,15 +3,13 @@
 .model small
 .stack 100h
 .data
-len			equ 1
-bofile		db '--- inicio ---',10,13,'$'
+bufferLen			equ 1
 arch1		db 'file.txt',0	;un archivo, debe estar en la misma carpeta del ejecutable
-buf1		db 1 dup(?)		;buffer de lectura del archivo 1
+buffer		db 1 dup(?)		;buffer de lectura del archivo 1
 cola		db '$'
 collector	db 255 dup("$"),24h
 errmsg		db 10,13,'error apertura archivo file.txt!',10,13,'$'
-finmsg		db 10,13,'-- fin ---',10,13,'$'
-fiha1		dw ?			; file fiha1r del archivo abierto
+fileHandler		dw ?			; file fileHandlerr del archivo abierto
 salto 		db 	0dh,0ah,24h
 readStart	db 0
 linesRead	db 0
@@ -31,14 +29,14 @@ main proc
 	lea dx,arch1
 	mov al,0  ; 0 mean for reading purpose             ;open
 	int 21h
-	mov fiha1,ax 
+	mov fileHandler,ax 
 
 
 readLoop:
 	mov ah,3fh
-	mov bx,fiha1
-	lea dx, buf1                            ;read
-	mov cx,len
+	mov bx,fileHandler
+	lea dx, buffer                            ;read
+	mov cx,bufferLen
 	int 21h
     cmp ax,0   ; ahi en al hay algo....
 	je endoffile
@@ -51,18 +49,18 @@ readLoop:
 
 readLine:
 	lea bx, collector
-	mov al, buf1
+	mov al, buffer
 	cmp al, 0Dh
 	je readLoop
-	cmp buf1,0Ah
+	cmp buffer,0Ah
 	je hasReadLine
 	mov [bx][si], al
 	inc si
 	jmp readLoop
 
 skipLine:
-	lea dx, buf1 ;aca seria donde guardariamos en otra variable lo que se leyo
-	cmp buf1,0Ah
+	lea dx, buffer ;aca seria donde guardariamos en otra variable lo que se leyo
+	cmp buffer,0Ah
 	je hasReadLine
 	jmp readLoop
 
@@ -83,7 +81,7 @@ readNextLine:
 	jmp readLoop
 endoffile:
 	mov ah,3eh
-	mov dx,fiha1                                     ;close
+	mov dx,fileHandler                                     ;close
 	int 21h 
 fin:
 	mov ah,9
