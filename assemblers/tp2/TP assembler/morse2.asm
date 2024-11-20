@@ -39,6 +39,9 @@
 	longitudUsuario db 0
 	longitudAscii db '000', 0dh, 0ah, 24h
 
+
+
+
 .code
 
 extrn imprimirSalto:proc
@@ -52,9 +55,7 @@ extrn raya:proc
 extrn delay_corto:proc
 extrn delay_largo:proc
 extrn playCodigo:proc
-extrn copyString:proc
 extrn SelectWord:proc
-
 
 
 main proc
@@ -155,8 +156,7 @@ cargaUsuario proc
     call impresion
 
     call traduccion
-	lea bx, palabra
-	call impresion 
+
     call imprimirSalto
 
     lea bx, codigo
@@ -242,8 +242,8 @@ cargaUsuario proc
     salidaSi:
         lea bx, cartelExito
         call impresion
-	; mov bx, numeroRandom
-	; mov lineaALeer, bx			    ; Para cambiar de palabra aleatoria
+	mov bx, numeroRandom
+	mov lineaALeer, bx			    ; Para cambiar de palabra aleatoria
         jmp finCargaUsuario
 
     salidaNo:
@@ -407,18 +407,17 @@ cargaUsuarioSonido endp
 
 
 traduccion proc
-	;este bloque deberia traer una linea random
+    ;lea bx, palabra								; bx: índice para recorrer "palabra"
     mov ax, lineaALeer
     call obtenerLineaRandom
-    push ax
-	;;;
-    call SelectWord								;deja en dx la palabra leida
-
-    lea bx, palabra
-	call copyString								;Toma la palabra de dx y caracter a caracter la pasa a bx
-	mov dx, 0
+    push lineaALeer
+    call SelectWord
+    mov ah,9
+    int 21h
+    mov bx, dx
+    mov dx, 0
     lea di, codigo								; di: índice para recorrer "codigo" (palabra codificada)    
-    lea bx, palabra								; por algun motivo tengo que volver a asignar palabra o no anda la correccion
+
 
 	recorrerPalabra:
 		mov dl, [bx]							; Muevo a dl el carácter al que apunta bx
@@ -465,6 +464,7 @@ traduccion proc
 
     ret
 traduccion endp
+
 
 contarCaracteresSt proc
 	push bp
@@ -530,19 +530,11 @@ obtenerLineaRandom proc
 	
 	;mov ah, al
 	;mov ah, 0
-	
-	;esto deberia ser el numero random
 	;mov lineaAleer, ax
-	inc lineaALeer
 
+	mov ax,1
+	mov lineaALeer, ax
 
-	;este deberia ser el largo del archivo
-	cmp lineaALeer, 3
-	jbe return_obtenerLineaRandom
-
-	;reset 
-	mov lineaALeer,0
-	return_obtenerLineaRandom:
 	pop dx
 	pop di
 	pop si

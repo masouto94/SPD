@@ -36,32 +36,7 @@ public raya
 public delay_corto
 public delay_largo
 public playCodigo
-public copyString
 
-	copyString proc
-	;dx = tiene la referencia de la palabra fuente
-	;bx = tiene la refefrencia de la palabra de destino
-	push ax
-	push bx
-	push dx
-	push si
-
-	mov si, dx 					;Se mueve la referencia a SI para poder usarlo como índide en memoria
-	checkLetter:
-		mov al, [si]
-		cmp al, 24h				;Si encuentra el $ se va de la funcion
-		je return_checkLetter
-		mov [bx], al
-		inc bx
-		inc si
-		jmp checkLetter
-	return_checkLetter:
-		pop si
-		pop ax
-		pop dx
-		pop bx
-		ret
-	copyString endp
 
 	imprimirSalto proc
 		mov ah, 9
