@@ -8,23 +8,24 @@
 			 'M --    N -.     O ---    P .--.   Q --.-  R .-.', 0dh, 0ah, \
 			 'S ...   T -      U ..-    V ...-   W .--   X -..-', 0dh, 0ah, \
 			 'Y -.--  Z --..', 0dh, 0ah, 24h
-	cartelJugador db 'Ingrese el código morse correspondiente de la palabra '
+	cartelJugador db 'Ingrese el codigo morse correspondiente de la palabra '
 	palabra db 255 dup (24h), 0dh, 0ah, 24h
 	lineaALeer dw 0
-	numeroRandom dw 1
-	;palabra db 'aaa', 0dh, 0ah, 24h
-	cartelJugadorInverso db 'Ingrese la palabra correspondiente al código '
+	numeroRandom dw 0
+	largoArchivo dw ?
+	cartelJugadorInverso db 'Ingrese la palabra correspondiente al codigo:', 0dh, 0ah, 24h
 	codigo db 255 dup(24h), 0dh, 0ah, 24h; palabra en morse codificada por la función que traduce
+	codigoImprimible db 255 dup(24h), 0dh, 0ah, 24h
 	cartelSonido db 'Ingrese el sonido reproducido', 0dh, 0ah, 24h
 	cartelSonido2 db 'Ingrese la palabra correspondiente al sonido reproducido', 0dh, 0ah, 24h
 	cartelModalidad db 	'Seleccione modalidad:', 0dh, 0ah, \
 				   	    '1. Codificar palabra (con tabla de referencia)', 0dh, 0ah, \
 				        '2. Codificar palabra (sin tabla de referencia)', 0dh, 0ah, \
-				   		'3. Decodificar código morse escrito (con tabla de referencia)', 0dh, 0ah, \
-				   		'4. Decodificar código morse escrito (sin tabla de referencia)', 0dh, 0ah, \
-				   		'5. Escribir código morse a partir de sonidos', 0dh, 0ah, \
-				   		'6. Decodificar código morse en sonido (con tabla de referencia)', 0dh, 0ah, \
-				   		'7. Decodificar código morse en sonido (sin tabla de referencia)', 0dh, 0ah, \
+				   		'3. Decodificar codigo morse escrito (con tabla de referencia)', 0dh, 0ah, \
+				   		'4. Decodificar codigo morse escrito (sin tabla de referencia)', 0dh, 0ah, \
+				   		'5. Escribir codigo morse a partir de sonidos', 0dh, 0ah, \
+				   		'6. Decodificar codigo morse en sonido (con tabla de referencia)', 0dh, 0ah, \
+				   		'7. Decodificar codigo morse en sonido (sin tabla de referencia)', 0dh, 0ah, \
 						'0. Salir', 0dh, 0ah, 24h
 	cartel6 db 'SE REPRODUCE SONIDO Y EL USUARIO DEBE ESCRIBIR LA PALABRA (MOSTRANDO TABLA)', 0dh, 0ah, 24h
 	cartel7 db 'SE REPRODUCE SONIDO Y EL USUARIO DEBE ESCRIBIR LA PALABRA (SIN TABLA)', 0dh, 0ah, 24h
@@ -54,13 +55,14 @@ extrn delay_largo:proc
 extrn playCodigo:proc
 extrn copyString:proc
 extrn SelectWord:proc
-
-
+extrn GetFileLength:proc
 
 main proc
 	mov ax, @data
 	mov ds, ax
 
+	call GetFileLength
+	mov largoArchivo, si
 	call menu
 		
 	fin:
@@ -72,7 +74,11 @@ main endp
 menu proc
 	elegirModalidad:
 		call imprimirSalto
+		lea bx, codigo
+		call limpiarPalabra
 		lea bx, palabra
+		call limpiarPalabra
+		lea bx, palabraUsuario
 		call limpiarPalabra
 
 		lea bx, cartelModalidad
@@ -80,7 +86,7 @@ menu proc
 
 		mov ah, 1
 		int 21h
-
+		int 99h
 		cmp al, '1'
 		je modalidad1
 		cmp al, '2'
@@ -117,11 +123,15 @@ menu proc
 			call imprimirSalto
 			call mostrarTabla
 			call cargaUsuarioInversa
+			lea bx, codigoImprimible				; Limpiamos "codigoImprimible" para que se llene bien cuando volvamos a llamar a esta modalidad
+			call limpiarPalabra
 			jmp elegirModalidad
 
 		modalidad4:
 			call imprimirSalto
-			call cargaUsuarioInversa			
+			call cargaUsuarioInversa
+			lea bx, codigoImprimible
+			call limpiarPalabra		
 			jmp elegirModalidad
 
 		modalidad5:
@@ -131,7 +141,8 @@ menu proc
 			call impresion
 			lea bx, codigo
 			call playCodigo
-			call cargaUsuario
+			;call cargaUsuario
+			call compararSonido
 			jmp elegirModalidad
 
 		modalidad6:
@@ -158,7 +169,6 @@ cargaUsuario proc
 	lea bx, palabra
 	call impresion 
     call imprimirSalto
-
     lea bx, codigo
     push bx
     call contarCaracteresSt		    		; Se cuentan los caracteres de "codigo" para después hacer la comparación
@@ -242,8 +252,6 @@ cargaUsuario proc
     salidaSi:
         lea bx, cartelExito
         call impresion
-	; mov bx, numeroRandom
-	; mov lineaALeer, bx			    ; Para cambiar de palabra aleatoria
         jmp finCargaUsuario
 
     salidaNo:
@@ -258,12 +266,57 @@ cargaUsuario proc
 cargaUsuario endp
 
 
+imprimirCodigo proc
+	lea bx, codigo
+	lea si, codigoImprimible
+	mov cx, 0
+
+	procesoParaImprimir:
+		cmp byte ptr [bx], 24h
+		je finImprimirCodigo
+
+		cmp byte ptr [bx], '*'
+		je ignorarSimbolo
+
+		cmp cx, 4
+		je meterEspacio
+
+		mov al, byte ptr [bx]		; Si no es asterisco, muevo lo que está a codigoImprimible (punto o raya)
+		mov byte ptr [si], al
+
+		inc si
+		inc cx
+		jmp avanzar
+
+		ignorarSimbolo:
+			inc cx
+			jmp avanzar
+
+	meterEspacio:					; Después de cuatro caracteres, hay un espacio
+		mov byte ptr [si], 20h
+		inc si
+		mov cx, 0
+		jmp procesoParaImprimir
+
+	avanzar:
+		inc bx
+		jmp procesoParaImprimir
+
+	finImprimirCodigo:
+		mov byte ptr [si], 0
+		lea bx, codigoImprimible
+		call impresion
+		ret
+imprimirCodigo endp
+
+
 cargaUsuarioInversa proc
+    call traduccion
 
     lea bx, cartelJugadorInverso
     call impresion
 
-    call traduccion
+	call imprimirCodigo
 
     call imprimirSalto
 
@@ -271,7 +324,7 @@ cargaUsuarioInversa proc
     push bx
     call contarCaracteresSt		    		; Se cuentan los caracteres de "codigo" para después hacer la comparación
     mov ah, 0
-    sub al, 2						; Le resto 2 caracteres (0dh y 0ah)
+;    sub al, 2						; Le resto 2 caracteres (0dh y 0ah)
     mov longitud, al
 
     lea bx, longitudAscii					; Esto es para ver si se están contando bien los caracteres
@@ -288,10 +341,10 @@ cargaUsuarioInversa proc
         int 21h
         cmp al, 0dh
         je preComparacionInversa
-	mov [bx], al
-	inc bx
-	inc si
-	jmp cargaAlfabeto
+		mov [bx], al
+		inc bx
+		inc si
+		jmp cargaAlfabeto
 
     preComparacionInversa:
         mov ax, si
@@ -331,14 +384,113 @@ cargaUsuarioInversa proc
 cargaUsuarioInversa endp
 
 
-cargaUsuarioSonido proc
+compararSonido proc							; Es igual a cargaUsuario, pero sin las primeras líneas (porque no hay que mostrar la palabra)
+    lea bx, codigo
+    push bx
+    call contarCaracteresSt		    		; Se cuentan los caracteres de "codigo" para después hacer la comparación
+    mov ah, 0
+    mov longitud, al
+
+    lea bx, longitudAscii					; Esto es para ver si se están contando bien los caracteres
+    call regToAscii
+    lea bx, longitudAscii
+    call impresion
+
+    mov ax, 0
+    mov si, 0
+
+    cargaMorse2:
+        mov ah, 1
+        int 21h
+        cmp al, 0dh
+        je preComparacion2
+        cmp al, 20h
+        je tokenizarMorse2
+
+        analizarPunto2:
+            cmp al, '.'
+            je meterPunto2
+
+        analizarRaya2:
+            cmp al, '-'
+            je meterRaya2
+
+		jmp cargaMorse2
+
+        meterPunto2:
+            mov palabraUsuario[si], al
+			call punto
+            inc si
+            jmp cargaMorse2
+
+		meterRaya2:
+            mov palabraUsuario[si], al
+			call raya
+            inc si
+            jmp cargaMorse2
+
+        tokenizarMorse2:
+            mov dl, 4                       ; Muevo 4 a dl
+            mov ax, si                      ; Muevo si a ax
+            div dl                          ; Divido si por 4 para quedarme con el resto (resto = cantidad de rayas y puntos del símbolo morse)
+            cmp ah, 0
+            je cargaMorse2
+            sub dl, ah                      ; Eso se lo resto a 4 para tener la cantidad de espacios (queda guardada en dl)
+            mov ch, 0
+            mov cl, dl                      ; Guardo en cx la cantidad de espacios
+            completarAsteriscos2:
+                mov palabraUsuario[si], '*'
+                inc si
+                loop completarAsteriscos2
+            jmp cargaMorse2
+
+    preComparacion2:
+        mov ax, si
+        mov ah, 0
+        mov longitudUsuario, al              ; Almacenamos cantidad de caracteres de lo que ingresó el usuario
+
+        mov si, 0
+        mov ch, 0
+        mov cl, longitud                     ; Almacenamos la cantidad de caracteres de "codigo" en CX para hacer el loop
+            
+    comparacion2:
+        mov dl, palabraUsuario[si]
+        cmp dl, codigo[si]
+        jne salidaNo2
+        inc si
+        loop comparacion2
+
+    mov ah, 0                               ; Esto se hace para ver si el usuario se pasó de caracteres
+    mov al, longitudUsuario                 ; Si la longitud es distinta al contador SI, es porque metió caracteres de más
+    cmp si, ax
+    jne salidaNo2
+
+    salidaSi2:
+        lea bx, cartelExito
+        call impresion
+	; mov bx, numeroRandom
+	; mov lineaALeer, bx			    ; Para cambiar de palabra aleatoria
+        jmp finCargaUsuario2
+
+    salidaNo2:
+        lea bx, cartelError
+        call impresion
+
+    finCargaUsuario2:
+		lea bx, palabraUsuario
+		call impresion
+		ret
+compararSonido endp
+
+
+cargaUsuarioSonido proc							; Es igual a cargaUsuarioInversa, pero sin imprimir "codigo" sino reproduciéndolo
+	call traduccion
+
+    lea bx, codigo
+    call playCodigo
 
     lea bx, cartelSonido2
     call impresion
-
-    call traduccion
-    lea bx, codigo
-    call playCodigo
 
     call imprimirSalto
 
@@ -346,7 +498,7 @@ cargaUsuarioSonido proc
     push bx
     call contarCaracteresSt		    		; Se cuentan los caracteres de "codigo" para después hacer la comparación
     mov ah, 0
-    sub al, 2						; Le resto 2 caracteres (0dh y 0ah)
+    ;sub al, 2						; Le resto 2 caracteres (0dh y 0ah)
     mov longitud, al
 
     lea bx, longitudAscii					; Esto es para ver si se están contando bien los caracteres
@@ -363,10 +515,10 @@ cargaUsuarioSonido proc
         int 21h
         cmp al, 0dh
         je preComparacionSonido
-	mov [bx], al
-	inc bx
-	inc si
-	jmp cargaAlfabeto2
+		mov [bx], al
+		inc bx
+		inc si
+		jmp cargaAlfabeto2
 
     preComparacionSonido:
         mov ax, si
@@ -380,7 +532,7 @@ cargaUsuarioSonido proc
     comparacionSonido:
         mov dl, palabraUsuario[si]
         cmp dl, palabra[si]
-        jne salidaInversaNo
+        jne salidaSonidoNo
         inc si
         loop comparacionSonido
 
@@ -407,9 +559,10 @@ cargaUsuarioSonido endp
 
 
 traduccion proc
-	;este bloque deberia traer una linea random
-    mov ax, lineaALeer
+	mov bx, numeroRandom
+	mov si, largoArchivo
     call obtenerLineaRandom
+    mov ax, lineaALeer
     push ax
 	;;;
     call SelectWord								;deja en dx la palabra leida
@@ -422,7 +575,7 @@ traduccion proc
 
 	recorrerPalabra:
 		mov dl, [bx]							; Muevo a dl el carácter al que apunta bx
-		cmp dl, 0dh
+		cmp dl, 24h
 		je imprimir
 		mov si, 0								; si: índice para recorrer alfabeto
 		mov ax, 0
@@ -448,7 +601,7 @@ traduccion proc
 					cmp si, ax					; Si si = ax, significa que se terminó de codificar la letra
 					je siguienteCaracter
 					mov dh, morse[si]			; Muevo a dh un carácter de un símbolo morse
-					mov [di], dh				; Guardo el código morse correspondiente a ese índice en la variable "codigo"
+					mov [di], dh				; Guardo el codigo morse correspondiente a ese índice en la variable "codigo"
 					inc di
 					inc si
 					jmp bucleMorse
@@ -512,42 +665,42 @@ limpiarPalabra endp
 
 
 obtenerLineaRandom proc
-	;semilla
 	push ax
-	;sumatoria
 	push si
-	;numero anterior
-	push di
-	;numero final
 	push dx
-    
-    	 
-       	int 81h
-       	
-; esto deberia generar un numero entre 0 y 19
-	;mov dl, 20
-	;div dl
-	
-	;mov ah, al
-	;mov ah, 0
-	
-	;esto deberia ser el numero random
-	;mov lineaAleer, ax
-	inc lineaALeer
+	push cx
 
+    ; call GetFileLength
 
-	;este deberia ser el largo del archivo
-	cmp lineaALeer, 3
-	jbe return_obtenerLineaRandom
+	mov ah, 2Ch
+	int 21h
 
-	;reset 
-	mov lineaALeer,0
-	return_obtenerLineaRandom:
+	;Vamos modificando numero random
+	add bh, dh
+	sub bl, dl
+	mov bh, bl
+	mov bh,0
+	mov numeroRandom, bx
+
+	;Obtenemos el numero final
+	xor ax, ax	
+	mov al, bl
+	xor dx, dx
+	mov dx, si
+	div dl
+	mov al,ah
+	mov ah,0
+
+	;Linea a leer será el numero
+	mov lineaALeer, ax
+
+	pop cx
 	pop dx
-	pop di
 	pop si
 	pop ax
 	ret
 obtenerLineaRandom endp
+
+
 
 end

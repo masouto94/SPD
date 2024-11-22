@@ -10,6 +10,8 @@ cola		db '$'
 collector	db 255 dup("$"),24h
 errmsg		db 10,13,'error apertura archivo file.txt!',10,13,'$'
 fileHandler		dw ?			; file fileHandlerr del archivo abierto
+
+fileLength 	dw 0
 salto 		db 	0dh,0ah,24h
 ;Esto es lo que se pushea desde el programa
 ;readStart	dw 0
@@ -18,21 +20,10 @@ linesToRead	dw 1
 
 .code
 public SelectWord
-public Clearscreen
-; main proc
-; 	mov ax,@data
-; 	mov ds,ax    ; lo de siempre
-; 	push readStart
-; 	;push linesToRead
-; 	call SelectWord
-; 	mov ah,9
-; 	int 21h
-; 	mov ah,4ch
-;     int 21h  
-; main endp
+public GetFileLength
 
 SelectWord proc
-	;Recibe por stack la linea que debe leer
+	;Recibe por stack la linea por la que debe empezar
 	;devuelve por dx la palabra
 	;ss:[bp+4] => Linea a leer (empieza en 0)
 	;dx => Palabra leida
@@ -119,7 +110,7 @@ SelectWord proc
 
 		jne readNextLine_SelectWord
 		je return_SelectWord
-		call clearscreen
+		int 99h
 
 	readNextLine_SelectWord:
 		jmp readLoop_SelectWord
@@ -140,28 +131,70 @@ SelectWord proc
 SelectWord endp
 
 
-proc Clearscreen
-	push ax
-	push es
-	push cx
-	push di
-	mov ax,3
-	int 10h
-	mov ax,0b800h
-	mov es,ax
-	mov cx,1000
-	mov ax,7
-	mov di,ax
-	cld
-	rep stosw
-	pop di
-	pop cx
-	pop es
-	pop ax
-	ret 
-Clearscreen endp
+; proc Clearscreen
+; 	push ax
+; 	push es
+; 	push cx
+; 	push di
+; 	mov ax,3
+; 	int 10h
+; 	mov ax,0b800h
+; 	mov es,ax
+; 	mov cx,1000
+; 	mov ax,7
+; 	mov di,ax
+; 	cld
+; 	rep stosw
+; 	pop di
+; 	pop cx
+; 	pop es
+; 	pop ax
+; 	ret 
+; Clearscreen endp
 
-proc GetFileLength
+GetFileLength proc
+	push ax
+	push dx
+	push bx
+	push cx
+
+	mov fileLength,0
+	;Abre el archivo 
+	mov ah,3dh
+	lea dx,arch1
+	mov al,0
+	int 21h
+	mov fileHandler,ax 
+
+	readLoop_GetFileLength:	
+		;Empieza a leer los caracteres y los guarda en buffer
+		mov ah,3fh
+		mov bx,fileHandler
+		lea dx, buffer
+		mov cx,bufferLen
+		int 21h
+		cmp ax,0  
+		je return_GetFileLength
+		
+		mov al, buffer
+		cmp al, 0ah
+		je hasReadLine_GetFileLength
+		jmp readLoop_GetFileLength
+		
+	hasReadLine_GetFileLength:
+	inc fileLength
+	jmp readLoop_GetFileLength
+	
+	return_GetFileLength:
+	mov si, fileLength
+	mov ah,3eh
+	mov dx,fileHandler                                     ;close
+	int 21h 
+
+	pop cx
+	pop bx
+	pop dx
+	pop ax
 	ret 
 GetFileLength endp
 
