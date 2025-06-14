@@ -17,7 +17,10 @@
 
 
 .code
-;Aca empiezan las funciones. este comentario no sirve
+;Aca empiezan las funciones este comentario lo hago desde pruebaGit. Ahora quiero poner mas cosas
+;puse mas cosas
+;cosas que sirven
+;Resolvi los conflictos de buena manera
 public numeroReg
 public imprimirSalto
 public asciiToReg
