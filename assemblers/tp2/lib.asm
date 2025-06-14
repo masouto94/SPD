@@ -17,7 +17,7 @@
 
 
 .code
-
+;Aca empiezan las funciones
 public numeroReg
 public imprimirSalto
 public asciiToReg
