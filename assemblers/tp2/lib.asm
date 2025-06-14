@@ -18,6 +18,8 @@
 
 .code
 ;Aca empiezan las funciones este comentario lo hago desde pruebaGit. Ahora quiero poner mas cosas
+;puse mas cosas
+;cosas que sirven
 public numeroReg
 public imprimirSalto
 public asciiToReg
