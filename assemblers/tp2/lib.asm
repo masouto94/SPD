@@ -17,7 +17,7 @@
 
 
 .code
-;Aca empiezan las funciones este comentario lo hago desde pruebaGit
+;Aca empiezan las funciones este comentario lo hago desde pruebaGit. Ahora quiero poner mas cosas
 public numeroReg
 public imprimirSalto
 public asciiToReg
