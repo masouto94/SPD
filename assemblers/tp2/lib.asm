@@ -17,7 +17,7 @@
 
 
 .code
-;Aca empiezan las funciones
+;Aca empiezan las funciones este comentario lo hago desde pruebaGit
 public numeroReg
 public imprimirSalto
 public asciiToReg
